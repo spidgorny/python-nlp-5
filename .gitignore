@@ -1,0 +1,4 @@
+*.vec
+*.json
+.idea/
+.env
