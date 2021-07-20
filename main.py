@@ -66,7 +66,7 @@ class TweetPreprocessor:
         # nlp = spacy.load("en_core_web_sm")
         nlp_file = 'nlp_model'
         if os.path.isdir(nlp_file):
-            nlp = Language.from_disk(nlp_file)
+            nlp = Language().from_disk(path=nlp_file)
         else:
             nlp = self.build_npl()
             os.mkdir(nlp_file)
@@ -106,13 +106,15 @@ class TweetPreprocessor:
         # process tweet
         doc = self.nlp(tweet)
 
-        print('tokens')
-        for token in doc.tokens:
-            print(token.text, token.pos_, token.dep_)
+        print('tokens:')
+        for token in doc:
+            print([token.text, token.pos_, token.dep_])
+            # pprint(token.vector)
 
-        print('entities')
-        for entity in doc.ents:
-            print(entity.text, entity.label_)
+        # print('entities')
+        # for entity in doc.ents:
+        #     print(entity.text, entity.label_)
+        return doc
 
 
 # Press the green button in the gutter to run the script.
