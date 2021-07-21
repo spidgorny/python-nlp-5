@@ -10,6 +10,9 @@ from pprint import pprint
 
 from spacy import Language
 import os.path
+import json
+from box import Box
+import numpy as np
 
 
 class Head(object):
@@ -18,7 +21,8 @@ class Head(object):
         self.fd = fd
 
     def write(self, msg):
-        if self.lines <= 0: return
+        if self.lines <= 0:
+            return
         n = msg.count('\n')
         if n < self.lines:
             self.lines -= n
@@ -60,6 +64,12 @@ def print_hi(name):
 
 
 class TweetPreprocessor:
+    """
+    Schreiben Sie mittels Python eine Klasse TweetPreprocessor. Beim initialisieren soll Ihr
+Programm die zur Verfügung gestellten fastText-Embeddings in einem Dictionary einlesen und
+Spacy initialisieren. Hierzu darf auch die Funktion von der fastText-Seite verwendet werden12.
+(Achten Sie hier und in allen weiteren Aufgaben darauf, dass Sie die Daten als UTF8 einlesen.)
+    """
     nlp: Language
 
     def __init__(self):
@@ -103,24 +113,59 @@ class TweetPreprocessor:
         return data
 
     def convert_tweet(self, tweet: str):
+        """
+        Schreiben Sie eine Funktion convert_tweet(), die einen string/tweet als Parameter übernimmt,
+mit Hilfe von Spacy tokenisiert und eine Liste der Wortvektoren zurückgibt. Wörter die nicht
+in fastText vorhanden sind, können ausgelassen werden.
+        :param tweet:
+        :return:
+        """
         # process tweet
         doc = self.nlp(tweet)
 
-        print('tokens:')
-        for token in doc:
-            print([token.text, token.pos_, token.dep_])
+        # print('tokens:')
+        # for token in doc:
+        #     print([token.text, token.pos_, token.dep_])
             # pprint(token.vector)
 
         # print('entities')
         # for entity in doc.ents:
         #     print(entity.text, entity.label_)
-        return doc
+        return doc.vector
+
+    def convert_dataset(self):
+        """
+        Schreiben Sie nun eine zweite Funktion convert_dataset(), die einen Twitter Datensatz einliest
+und jeden Tweet mit Hilfe der vorherigen Funktion verarbeitet. Repräsentieren Sie jeden Tweet
+jeweils als max, min und avg (np.max(veclist, 0), np.average(veclist, 0), np.min(veclist, 0))
+Vektor (dieser sollte nun jeweils die Dimension 100 haben) und speichern Sie diese mit in dem
+json-Objekt (tweet["tweetmax"], tweet["tweetmin"], tweet["tweetavg"]). Der so verarbeitete
+Datensatz sollte am Ende abgespeichert werden (siehe Abbildung 1).
+        :return:
+        """
+        results = []
+        print('Processing dev tweets')
+        with open('filtered_dev.json') as f:
+            data = json.load(f)
+            data = [Box(x) for x in data]
+            i = 0
+            for tweet in data:
+                # pprint(tweet.text)
+                veclist = self.convert_tweet(tweet.text)
+                max = np.max(veclist, 0)
+                avg = np.average(veclist, 0)
+                min = np.min(veclist, 0)
+                results.append(Box(min=min, avg=avg, max=max))
+
+                i += 1
+                if not i % 100:
+                    print('.', end='')
+        print()
+        return results
 
 
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     # print_hi('PyCharm')
     tp = TweetPreprocessor()
     tp.convert_tweet('Hello World. How are you?')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    tp.convert_dataset()
