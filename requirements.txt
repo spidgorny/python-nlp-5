@@ -3,3 +3,4 @@ scikit-learn
 spacy
 matplotlib
 python-box
+numpy

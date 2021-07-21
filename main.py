@@ -13,6 +13,7 @@ import os.path
 import json
 from box import Box
 import numpy as np
+from spacy.tokens import Doc
 
 
 class Head(object):
@@ -121,17 +122,27 @@ in fastText vorhanden sind, können ausgelassen werden.
         :return:
         """
         # process tweet
-        doc = self.nlp(tweet)
+        doc: Doc = self.nlp(tweet)
 
         # print('tokens:')
         # for token in doc:
         #     print([token.text, token.pos_, token.dep_])
             # pprint(token.vector)
+            # pprint(self.nlp[token.text])
+
+        return [token.vector for token in doc]
 
         # print('entities')
         # for entity in doc.ents:
         #     print(entity.text, entity.label_)
-        return doc.vector
+        # return doc.vector
+
+    @staticmethod
+    def test_one_tweet():
+        tp = TweetPreprocessor()
+        vectors = tp.convert_tweet('Hello World. How are you?')
+        # pprint(vectors)
+        # pprint(np.shape(vectors))
 
     def convert_dataset(self):
         """
@@ -143,7 +154,6 @@ json-Objekt (tweet["tweetmax"], tweet["tweetmin"], tweet["tweetavg"]). Der so ve
 Datensatz sollte am Ende abgespeichert werden (siehe Abbildung 1).
         :return:
         """
-        results = []
         print('Processing dev tweets')
         with open('filtered_dev.json') as f:
             data = json.load(f)
@@ -155,17 +165,39 @@ Datensatz sollte am Ende abgespeichert werden (siehe Abbildung 1).
                 max = np.max(veclist, 0)
                 avg = np.average(veclist, 0)
                 min = np.min(veclist, 0)
-                results.append(Box(min=min, avg=avg, max=max))
+                # pprint(Box(min=min, max=max, avg=avg))
+                tweet.tweetmin = min.tolist()
+                tweet.tweetavg = avg.tolist()
+                tweet.tweetmax = max.tolist()
 
                 i += 1
                 if not i % 100:
                     print('.', end='')
         print()
-        return results
+        return data
+
+    @staticmethod
+    def aufgabe1():
+        tp = TweetPreprocessor()
+        tp.convert_tweet('Hello World. How are you?')
+        dataset = tp.convert_dataset()
+        # for entry in dataset:
+        #     print(len(entry.tweetmin))
+        with open('min-max-avg-dev.json', 'w') as f:
+            dataset = list(map(prepare_for_json, dataset))
+            json.dump(dataset, f, indent=2)
+
+
+# NumPy array is not JSON serializable
+def prepare_for_json(tweet: Box):
+    tweet.tweetavg = tweet.tweetavg.to_list()
+    tweet.tweetmin = tweet.tweetmin.to_list()
+    tweet.tweetmax = tweet.tweetmax.to_list()
+    normal = tweet.to_dict()
+    return normal
 
 
 if __name__ == '__main__':
     # print_hi('PyCharm')
-    tp = TweetPreprocessor()
-    tp.convert_tweet('Hello World. How are you?')
-    tp.convert_dataset()
+    # TweetPreprocessor.test_one_tweet()
+    TweetPreprocessor.aufgabe1()
